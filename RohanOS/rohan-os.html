@@ -1,0 +1,979 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Rohan Iyer — OS</title>
+<link href="https://fonts.googleapis.com/css2?family=SF+Pro+Display:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; user-select: none; }
+
+:root {
+  --menubar-h: 28px;
+  --dock-h: 80px;
+  --glass: rgba(255,255,255,0.18);
+  --glass-border: rgba(255,255,255,0.28);
+  --glass-dark: rgba(0,0,0,0.4);
+  --text: #fff;
+  --text-dim: rgba(255,255,255,0.6);
+  --accent: #0a84ff;
+  --radius: 12px;
+  --font: 'Inter', -apple-system, sans-serif;
+  --mono: 'JetBrains Mono', monospace;
+}
+
+/* ── DESKTOP ── */
+#desktop {
+  position: fixed; inset: 0;
+  background: #1a1a2e;
+  overflow: hidden;
+  font-family: var(--font);
+}
+
+#wallpaper {
+  position: absolute; inset: 0;
+  background:
+    radial-gradient(ellipse 120% 80% at 20% 20%, #16213e 0%, transparent 60%),
+    radial-gradient(ellipse 80% 100% at 80% 80%, #0f3460 0%, transparent 50%),
+    radial-gradient(ellipse 60% 60% at 50% 50%, #533483 0%, transparent 70%),
+    linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+}
+
+/* stars */
+#wallpaper::before {
+  content: '';
+  position: absolute; inset: 0;
+  background-image:
+    radial-gradient(1px 1px at 20% 30%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 40% 70%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 60% 20%, rgba(255,255,255,0.5) 0%, transparent 100%),
+    radial-gradient(1px 1px at 80% 60%, rgba(255,255,255,0.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 15% 80%, rgba(255,255,255,0.3) 0%, transparent 100%),
+    radial-gradient(1px 1px at 90% 10%, rgba(255,255,255,0.4) 0%, transparent 100%),
+    radial-gradient(1px 1px at 70% 45%, rgba(255,255,255,0.2) 0%, transparent 100%),
+    radial-gradient(1px 1px at 35% 55%, rgba(255,255,255,0.3) 0%, transparent 100%);
+  background-size: 400px 400px;
+}
+
+/* ── MENUBAR ── */
+#menubar {
+  position: absolute; top: 0; left: 0; right: 0;
+  height: var(--menubar-h);
+  background: rgba(0,0,0,0.5);
+  backdrop-filter: blur(20px);
+  display: flex; align-items: center;
+  padding: 0 16px;
+  z-index: 1000;
+  border-bottom: 0.5px solid rgba(255,255,255,0.1);
+}
+.menubar-left { display: flex; align-items: center; gap: 20px; flex: 1; }
+.menubar-apple { font-size: 14px; font-weight: 700; color: var(--text); }
+.menubar-item {
+  font-size: 12px; color: var(--text); font-weight: 500; cursor: default;
+  opacity: 0.85; position: relative; padding: 2px 6px; border-radius: 4px;
+}
+.menubar-item:hover { opacity: 1; background: rgba(255,255,255,0.12); }
+.menubar-item.open { opacity: 1; background: rgba(255,255,255,0.15); }
+
+.menu-dropdown {
+  position: absolute; top: calc(100% + 6px); left: 0;
+  background: rgba(32,32,36,0.97); backdrop-filter: blur(24px);
+  border: 0.5px solid rgba(255,255,255,0.18); border-radius: 8px;
+  padding: 4px; min-width: 200px; z-index: 2000;
+  box-shadow: 0 16px 48px rgba(0,0,0,0.6);
+  display: none;
+}
+.menu-dropdown.open { display: block; animation: dropIn 0.12s ease; }
+@keyframes dropIn { from { opacity:0; transform:translateY(-4px); } to { opacity:1; transform:translateY(0); } }
+.menu-item {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 6px 12px; border-radius: 5px; font-size: 13px; color: var(--text);
+  cursor: default; gap: 32px;
+}
+.menu-item:hover { background: var(--accent); }
+.menu-item .shortcut { font-size: 11px; color: rgba(255,255,255,0.4); }
+.menu-item:hover .shortcut { color: rgba(255,255,255,0.7); }
+.menu-separator { height: 0.5px; background: rgba(255,255,255,0.1); margin: 4px 2px; }
+.menubar-right { display: flex; align-items: center; gap: 14px; }
+.menubar-right span { font-size: 12px; color: var(--text); opacity: 0.85; font-weight: 500; }
+#menubar-clock { font-size: 12px; color: var(--text); font-weight: 500; }
+.wifi-icon { font-size: 11px; }
+.battery-icon { font-size: 11px; }
+
+/* ── DESKTOP ICONS ── */
+#icon-grid {
+  position: absolute;
+  top: calc(var(--menubar-h) + 20px);
+  right: 20px;
+  display: flex; flex-direction: column; gap: 8px;
+  z-index: 10;
+}
+
+.desktop-icon {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 5px; cursor: pointer; padding: 8px; border-radius: 8px;
+  width: 76px; transition: background 0.15s;
+}
+.desktop-icon:hover { background: rgba(255,255,255,0.1); }
+.desktop-icon.selected { background: rgba(10,132,255,0.3); }
+.desktop-icon .icon-img {
+  width: 52px; height: 52px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; flex-shrink: 0;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.4);
+}
+.desktop-icon .icon-label {
+  font-size: 11px; color: var(--text); text-align: center;
+  font-weight: 500; text-shadow: 0 1px 4px rgba(0,0,0,0.8);
+  line-height: 1.3; max-width: 72px;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+
+/* ── WINDOWS ── */
+.window {
+  position: absolute;
+  background: rgba(28,28,32,0.92);
+  backdrop-filter: blur(40px);
+  border-radius: 12px;
+  border: 0.5px solid rgba(255,255,255,0.15);
+  box-shadow: 0 32px 80px rgba(0,0,0,0.7), 0 0 0 0.5px rgba(0,0,0,0.3);
+  min-width: 340px; min-height: 200px;
+  display: flex; flex-direction: column;
+  z-index: 100; overflow: hidden;
+}
+.window.focused { z-index: 200; border-color: rgba(255,255,255,0.22); }
+.window.minimized { display: none; }
+
+.window-titlebar {
+  height: 40px; display: flex; align-items: center;
+  padding: 0 14px; gap: 8px; flex-shrink: 0;
+  cursor: move;
+  background: rgba(255,255,255,0.04);
+  border-bottom: 0.5px solid rgba(255,255,255,0.08);
+  position: relative;
+}
+.traffic-lights { display: flex; gap: 7px; align-items: center; }
+.tl {
+  width: 12px; height: 12px; border-radius: 50%; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 7px; color: transparent; transition: color 0.1s;
+  flex-shrink: 0;
+}
+.tl:hover { color: rgba(0,0,0,0.6); }
+.tl-close { background: #ff5f57; }
+.tl-min   { background: #febc2e; }
+.tl-max   { background: #28c840; }
+.window-title {
+  position: absolute; left: 50%; transform: translateX(-50%);
+  font-size: 13px; font-weight: 600; color: var(--text);
+  opacity: 0.85; pointer-events: none; white-space: nowrap;
+}
+.window-content { flex: 1; overflow: auto; position: relative; }
+
+/* resize handle */
+.resize-handle {
+  position: absolute; bottom: 0; right: 0;
+  width: 16px; height: 16px; cursor: se-resize;
+  z-index: 10;
+}
+.resize-handle::after {
+  content: '';
+  position: absolute; bottom: 4px; right: 4px;
+  width: 8px; height: 8px;
+  border-right: 2px solid rgba(255,255,255,0.2);
+  border-bottom: 2px solid rgba(255,255,255,0.2);
+}
+
+/* ── DOCK ── */
+#dock {
+  position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%);
+  height: 70px;
+  background: rgba(255,255,255,0.12);
+  backdrop-filter: blur(24px);
+  border: 0.5px solid rgba(255,255,255,0.2);
+  border-radius: 20px;
+  display: flex; align-items: center; padding: 0 12px; gap: 4px;
+  z-index: 500;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.5);
+}
+.dock-divider {
+  width: 0.5px; height: 40px; background: rgba(255,255,255,0.2);
+  margin: 0 4px; flex-shrink: 0;
+}
+.dock-icon {
+  width: 52px; height: 52px; border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 28px; cursor: pointer; position: relative;
+  transition: transform 0.15s cubic-bezier(0.34,1.56,0.64,1);
+  flex-shrink: 0;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.3);
+}
+.dock-icon:hover { transform: scale(1.25) translateY(-10px); }
+.dock-icon:active { transform: scale(1.1) translateY(-5px); }
+.dock-dot {
+  position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%);
+  width: 4px; height: 4px; border-radius: 50%; background: var(--text);
+  opacity: 0; transition: opacity 0.2s;
+}
+.dock-icon.running .dock-dot { opacity: 0.7; }
+.dock-tooltip {
+  position: absolute; bottom: 72px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.7); color: var(--text);
+  font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 6px;
+  white-space: nowrap; pointer-events: none; opacity: 0;
+  transition: opacity 0.15s; backdrop-filter: blur(8px);
+}
+.dock-icon:hover .dock-tooltip { opacity: 1; }
+
+/* ── WINDOW CONTENT STYLES ── */
+
+/* Finder / About */
+.finder-sidebar {
+  width: 160px; flex-shrink: 0; background: rgba(0,0,0,0.2);
+  border-right: 0.5px solid rgba(255,255,255,0.08);
+  padding: 16px 0;
+}
+.finder-sidebar-item {
+  padding: 6px 14px; font-size: 12px; color: rgba(255,255,255,0.65);
+  cursor: pointer; display: flex; align-items: center; gap: 8px;
+  border-radius: 6px; margin: 0 6px; transition: background 0.15s;
+}
+.finder-sidebar-item:hover { background: rgba(255,255,255,0.08); color: var(--text); }
+.finder-sidebar-item.active { background: rgba(10,132,255,0.25); color: var(--text); }
+.finder-sidebar-section { font-size: 10px; color: rgba(255,255,255,0.3); font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; padding: 12px 14px 4px; }
+.finder-main { flex: 1; overflow: auto; padding: 20px; }
+.finder-row { display: flex; }
+
+/* About content */
+.about-stat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 20px; }
+.about-stat-card {
+  background: rgba(255,255,255,0.05); border-radius: 10px;
+  padding: 14px; border: 0.5px solid rgba(255,255,255,0.08);
+}
+.about-stat-num { font-size: 1.6rem; font-weight: 700; color: var(--text); }
+.about-stat-label { font-size: 11px; color: var(--text-dim); margin-top: 2px; }
+.about-heading { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin: 20px 0 10px; }
+.about-body { font-size: 13px; color: rgba(255,255,255,0.7); line-height: 1.7; }
+.about-tag { display: inline-block; background: rgba(255,255,255,0.08); border: 0.5px solid rgba(255,255,255,0.12); border-radius: 6px; padding: 4px 10px; font-size: 11px; color: rgba(255,255,255,0.7); margin: 3px; }
+
+/* Project window */
+.proj-header { padding: 24px; border-bottom: 0.5px solid rgba(255,255,255,0.08); }
+.proj-emoji-big { font-size: 3rem; margin-bottom: 12px; display: block; }
+.proj-title { font-size: 1.4rem; font-weight: 700; color: var(--text); margin-bottom: 4px; }
+.proj-type { font-size: 12px; color: var(--text-dim); }
+.proj-body { padding: 20px 24px; }
+.proj-desc { font-size: 13px; color: rgba(255,255,255,0.75); line-height: 1.7; margin-bottom: 20px; }
+.proj-tags { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 20px; }
+.proj-tag { background: rgba(255,255,255,0.08); border-radius: 6px; padding: 4px 10px; font-size: 11px; color: rgba(255,255,255,0.7); border: 0.5px solid rgba(255,255,255,0.1); }
+.proj-stats-row { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.proj-stat { text-align: center; }
+.proj-stat-num { font-size: 1.1rem; font-weight: 700; color: var(--text); display: block; }
+.proj-stat-label { font-size: 10px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.08em; }
+.proj-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+.proj-btn {
+  padding: 8px 18px; border-radius: 8px; font-size: 12px; font-weight: 600;
+  cursor: pointer; border: none; transition: opacity 0.15s, transform 0.1s;
+}
+.proj-btn:hover { opacity: 0.85; transform: scale(1.02); }
+.proj-btn-primary { background: var(--accent); color: #fff; }
+.proj-btn-ghost { background: rgba(255,255,255,0.1); color: var(--text); border: 0.5px solid rgba(255,255,255,0.15); }
+.proj-play-btn {
+  display: flex; align-items: center; gap: 8px;
+  background: rgba(255,255,255,0.08); border: 0.5px solid rgba(255,255,255,0.15);
+  color: var(--text); border-radius: 8px; padding: 8px 16px;
+  font-size: 12px; font-weight: 600; cursor: pointer;
+  transition: background 0.15s;
+}
+.proj-play-btn:hover { background: rgba(255,255,255,0.14); }
+
+/* Terminal */
+.terminal-body {
+  background: #1e1e1e; height: 100%;
+  font-family: var(--mono); font-size: 13px; color: #f8f8f2;
+  padding: 16px; overflow-y: auto; line-height: 1.6;
+}
+.term-line { display: flex; gap: 8px; margin-bottom: 2px; flex-wrap: wrap; }
+.term-prompt { color: #50fa7b; flex-shrink: 0; }
+.term-cmd { color: #f8f8f2; }
+.term-out { color: #8be9fd; padding-left: 0; margin-bottom: 8px; white-space: pre-wrap; word-break: break-all; }
+.term-err { color: #ff5555; margin-bottom: 8px; }
+.term-input-row { display: flex; gap: 8px; align-items: center; margin-top: 4px; }
+.term-prompt-cur { color: #50fa7b; flex-shrink: 0; white-space: nowrap; }
+#term-input {
+  background: transparent; border: none; outline: none; color: #f8f8f2;
+  font-family: var(--mono); font-size: 13px; flex: 1; caret-color: #f8f8f2;
+  min-width: 0;
+}
+
+/* Contact */
+.contact-body { padding: 24px; }
+.contact-field { margin-bottom: 20px; }
+.contact-label { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: rgba(255,255,255,0.4); margin-bottom: 6px; }
+.contact-val { font-size: 14px; color: var(--text); }
+.contact-val a { color: var(--accent); text-decoration: none; }
+.contact-val a:hover { text-decoration: underline; }
+.contact-socials { display: flex; gap: 10px; flex-wrap: wrap; }
+.social-pill { background: rgba(255,255,255,0.08); border: 0.5px solid rgba(255,255,255,0.12); border-radius: 8px; padding: 8px 16px; font-size: 12px; font-weight: 600; color: var(--text); text-decoration: none; transition: background 0.15s; cursor: pointer; }
+.social-pill:hover { background: rgba(255,255,255,0.14); }
+
+/* scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 3px; }
+</style>
+</head>
+<body>
+<div id="desktop">
+  <div id="wallpaper"></div>
+
+  <!-- MENUBAR -->
+  <div id="menubar">
+    <div class="menubar-left">
+      <span class="menubar-apple">⌘</span>
+
+      <span class="menubar-item" id="mb-rohanos" onclick="toggleMenu('rohanos')">Rohan OS
+        <div class="menu-dropdown" id="dd-rohanos">
+          <div class="menu-item" onclick="openAbout()"><span>About Rohan</span></div>
+          <div class="menu-separator"></div>
+          <div class="menu-item" onclick="closeAllWindows()"><span>Close All Windows</span><span class="shortcut">⌘W</span></div>
+          <div class="menu-separator"></div>
+          <div class="menu-item" onclick="window.location.reload()"><span>Restart</span></div>
+        </div>
+      </span>
+
+      <span class="menubar-item" id="mb-file" onclick="toggleMenu('file')">File
+        <div class="menu-dropdown" id="dd-file">
+          <div class="menu-item" onclick="openAbout()"><span>Open About Me</span><span class="shortcut">⌘1</span></div>
+          <div class="menu-item" onclick="openTerminal()"><span>Open Terminal</span><span class="shortcut">⌘2</span></div>
+          <div class="menu-item" onclick="openContact()"><span>Open Contact</span><span class="shortcut">⌘3</span></div>
+          <div class="menu-separator"></div>
+          <div class="menu-item" onclick="PROJECTS.forEach((p,i)=>setTimeout(()=>openProject(p),i*120))"><span>Open All Projects</span><span class="shortcut">⌘⇧P</span></div>
+          <div class="menu-separator"></div>
+          <div class="menu-item" onclick="closeAllWindows()"><span>Close All</span><span class="shortcut">⌘⌥W</span></div>
+        </div>
+      </span>
+
+      <span class="menubar-item" id="mb-view" onclick="toggleMenu('view')">View
+        <div class="menu-dropdown" id="dd-view">
+          <div class="menu-item" onclick="tileWindows()"><span>Tile Windows</span><span class="shortcut">⌘⇧T</span></div>
+          <div class="menu-item" onclick="cascadeWindows()"><span>Cascade Windows</span><span class="shortcut">⌘⇧C</span></div>
+          <div class="menu-separator"></div>
+          <div class="menu-item" onclick="minimizeAllWindows()"><span>Minimize All</span><span class="shortcut">⌘M</span></div>
+        </div>
+      </span>
+
+      <span class="menubar-item" id="mb-help" onclick="toggleMenu('help')">Help
+        <div class="menu-dropdown" id="dd-help">
+          <div class="menu-item" onclick="openTerminal();setTimeout(()=>{const i=document.getElementById('term-input');if(i){i.value='help';i.dispatchEvent(new KeyboardEvent('keydown',{key:'Enter',bubbles:true}))}},400)"><span>Open Terminal Help</span></div>
+          <div class="menu-separator"></div>
+          <div class="menu-item" onclick="alert('Double-click icons to open apps.\nDrag windows by their title bar.\nResize from the bottom-right corner.\nTry the Terminal — type help!')"><span>Getting Started</span></div>
+          <div class="menu-item" onclick="openContact()"><span>Contact Rohan</span></div>
+        </div>
+      </span>
+    </div>
+    <div class="menubar-right">
+      <span class="wifi-icon">▲</span>
+      <span class="battery-icon">▮▮▮▮</span>
+      <span id="menubar-clock"></span>
+    </div>
+  </div>
+
+  <!-- DESKTOP ICONS -->
+  <div id="icon-grid"></div>
+
+  <!-- DOCK -->
+  <div id="dock"></div>
+</div>
+
+<!-- AUDIO -->
+<audio id="audio" preload="none"></audio>
+
+<script>
+// ═══════════════════════════════════════
+// DATA — CUSTOMIZE THIS
+// ═══════════════════════════════════════
+const PROJECTS = [
+  {
+    id: 'proj1', label: 'Project One', emoji: '🚀',
+    iconBg: 'linear-gradient(135deg,#4a1942,#1a0a2e)',
+    type: 'Full-Stack App',
+    desc: 'Describe what this project does, who it\'s for, and why you built it. Make it sound as cool as it actually is.',
+    tags: ['React', 'Node.js', 'PostgreSQL', 'AWS'],
+    stats: { Users: '2.4k', Commits: '340', Weeks: '8' },
+    links: { Live: '#', GitHub: '#' },
+    song: 'project1.mp3', songTitle: 'Song Name', songArtist: 'Artist',
+  },
+  {
+    id: 'proj2', label: 'Project Two', emoji: '🤖',
+    iconBg: 'linear-gradient(135deg,#0d2137,#0a1628)',
+    type: 'AI Tool',
+    desc: 'Describe what this project does and what problem it solves.',
+    tags: ['Python', 'OpenAI', 'FastAPI', 'React'],
+    stats: { Users: '800', Commits: '210', Weeks: '5' },
+    links: { Live: '#', GitHub: '#' },
+    song: 'project2.mp3', songTitle: 'Song Name', songArtist: 'Artist',
+  },
+  {
+    id: 'proj3', label: 'Project Three', emoji: '📱',
+    iconBg: 'linear-gradient(135deg,#0d3320,#0a1e14)',
+    type: 'Mobile App',
+    desc: 'Describe what this project does and what problem it solves.',
+    tags: ['React Native', 'Firebase', 'Expo'],
+    stats: { Users: '500', Commits: '180', Weeks: '6' },
+    links: { Live: '#', GitHub: '#' },
+    song: 'project3.mp3', songTitle: 'Song Name', songArtist: 'Artist',
+  },
+  {
+    id: 'proj4', label: 'Project Four', emoji: '⚡',
+    iconBg: 'linear-gradient(135deg,#3d1f00,#1e0f00)',
+    type: 'Open Source',
+    desc: 'Describe what this project does and what problem it solves.',
+    tags: ['TypeScript', 'CLI', 'npm'],
+    stats: { Users: '1.1k', Commits: '290', Weeks: '10' },
+    links: { Live: '#', GitHub: '#' },
+    song: 'project4.mp3', songTitle: 'Song Name', songArtist: 'Artist',
+  },
+  {
+    id: 'proj5', label: 'Project Five', emoji: '✦',
+    iconBg: 'linear-gradient(135deg,#3d0d0d,#1e0606)',
+    type: 'Design + Code',
+    desc: 'Describe what this project does and what problem it solves.',
+    tags: ['HTML', 'CSS', 'JavaScript', 'GSAP'],
+    stats: { Users: '300', Commits: '120', Weeks: '3' },
+    links: { Live: '#', GitHub: '#' },
+    song: 'project5.mp3', songTitle: 'Song Name', songArtist: 'Artist',
+  },
+];
+
+const ABOUT = {
+  name: 'Rohan Iyer',
+  role: 'Builder. Engineer. Side-project addict.',
+  location: 'Los Angeles, CA',
+  bio: 'Hey — I\'m Rohan. I build software, chase ideas, and try to make things that are genuinely useful or genuinely interesting. Replace this with your actual bio!',
+  stats: { Projects: '5+', Commits: '1.2k', Hours: '847', Ideas: '∞' },
+  skills: ['React','Node.js','Python','TypeScript','SQL','AI/ML','Figma','AWS','PostgreSQL','React Native'],
+  era: '"The Builder Era"',
+};
+
+const CONTACT = {
+  email: 'rohan@example.com',
+  location: 'Los Angeles, CA',
+  socials: { Twitter: '#', LinkedIn: '#', GitHub: '#', Instagram: '#' },
+};
+
+// ═══════════════════════════════════════
+// WINDOW MANAGER
+// ═══════════════════════════════════════
+let zTop = 200;
+const openWindows = {};
+
+function bringToFront(win) {
+  zTop++;
+  win.style.zIndex = zTop;
+  document.querySelectorAll('.window').forEach(w => w.classList.remove('focused'));
+  win.classList.add('focused');
+}
+
+function makeWindow({ id, title, width, height, x, y, content }) {
+  if (openWindows[id]) {
+    const w = openWindows[id];
+    w.classList.remove('minimized');
+    bringToFront(w);
+    return w;
+  }
+
+  const vw = window.innerWidth, vh = window.innerHeight;
+  const wx = x !== undefined ? x : Math.max(60, Math.min(vw - width - 60, 80 + Math.random() * 200));
+  const wy = y !== undefined ? y : Math.max(40, Math.min(vh - height - 100, 60 + Math.random() * 120));
+
+  const win = document.createElement('div');
+  win.className = 'window focused';
+  win.id = 'win-' + id;
+  win.style.cssText = `width:${width}px;height:${height}px;left:${wx}px;top:${wy}px`;
+
+  win.innerHTML = `
+    <div class="window-titlebar" id="tb-${id}">
+      <div class="traffic-lights">
+        <div class="tl tl-close" onclick="closeWindow('${id}')">✕</div>
+        <div class="tl tl-min"   onclick="minimizeWindow('${id}')">−</div>
+        <div class="tl tl-max"   onclick="maximizeWindow('${id}')">+</div>
+      </div>
+      <span class="window-title">${title}</span>
+    </div>
+    <div class="window-content" id="wc-${id}">${content}</div>
+    <div class="resize-handle" id="rh-${id}"></div>
+  `;
+
+  document.getElementById('desktop').appendChild(win);
+  openWindows[id] = win;
+  bringToFront(win);
+
+  // drag
+  const tb = document.getElementById('tb-' + id);
+  let dragging = false, ox = 0, oy = 0;
+  tb.addEventListener('mousedown', e => {
+    if (e.target.classList.contains('tl')) return;
+    dragging = true; bringToFront(win);
+    ox = e.clientX - win.offsetLeft;
+    oy = e.clientY - win.offsetTop;
+    e.preventDefault();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!dragging) return;
+    const nx = Math.max(0, Math.min(window.innerWidth - win.offsetWidth, e.clientX - ox));
+    const ny = Math.max(var_menubar_h(), Math.min(window.innerHeight - 60, e.clientY - oy));
+    win.style.left = nx + 'px'; win.style.top = ny + 'px';
+  });
+  document.addEventListener('mouseup', () => { dragging = false; });
+
+  // resize
+  const rh = document.getElementById('rh-' + id);
+  let resizing = false, rox = 0, roy = 0, rw = 0, rh2 = 0;
+  rh.addEventListener('mousedown', e => {
+    resizing = true; bringToFront(win);
+    rox = e.clientX; roy = e.clientY;
+    rw = win.offsetWidth; rh2 = win.offsetHeight;
+    e.preventDefault(); e.stopPropagation();
+  });
+  document.addEventListener('mousemove', e => {
+    if (!resizing) return;
+    win.style.width  = Math.max(340, rw + e.clientX - rox) + 'px';
+    win.style.height = Math.max(200, rh2 + e.clientY - roy) + 'px';
+  });
+  document.addEventListener('mouseup', () => { resizing = false; });
+
+  win.addEventListener('mousedown', () => bringToFront(win));
+
+  // init terminal input if needed
+  if (id === 'terminal') initTerminal();
+
+  return win;
+}
+
+function var_menubar_h() { return 28; }
+
+function closeWindow(id) {
+  const win = openWindows[id];
+  if (!win) return;
+  win.remove();
+  delete openWindows[id];
+  updateDockRunning();
+}
+
+function minimizeWindow(id) {
+  const win = openWindows[id];
+  if (win) win.classList.add('minimized');
+  updateDockRunning();
+}
+
+function maximizeWindow(id) {
+  const win = openWindows[id];
+  if (!win) return;
+  const isMax = win.dataset.maximized === '1';
+  if (isMax) {
+    win.style.left   = win.dataset.ox + 'px';
+    win.style.top    = win.dataset.oy + 'px';
+    win.style.width  = win.dataset.ow + 'px';
+    win.style.height = win.dataset.oh + 'px';
+    win.dataset.maximized = '0';
+  } else {
+    win.dataset.ox = win.offsetLeft;
+    win.dataset.oy = win.offsetTop;
+    win.dataset.ow = win.offsetWidth;
+    win.dataset.oh = win.offsetHeight;
+    win.style.left = '0'; win.style.top = var_menubar_h() + 'px';
+    win.style.width  = window.innerWidth + 'px';
+    win.style.height = (window.innerHeight - var_menubar_h() - 90) + 'px';
+    win.dataset.maximized = '1';
+  }
+}
+
+// ═══════════════════════════════════════
+// WINDOW CONTENT BUILDERS
+// ═══════════════════════════════════════
+function openAbout() {
+  const { name, role, bio, stats, skills, era } = ABOUT;
+  const content = `
+    <div class="finder-row" style="height:100%">
+      <div class="finder-sidebar">
+        <div class="finder-sidebar-section">Rohan</div>
+        <div class="finder-sidebar-item active">⊹ Overview</div>
+        <div class="finder-sidebar-item">📁 Resume</div>
+        <div class="finder-sidebar-section" style="margin-top:8px">Links</div>
+        <div class="finder-sidebar-item" onclick="openContact()">📬 Contact</div>
+      </div>
+      <div class="finder-main">
+        <div style="display:flex;align-items:center;gap:16px;margin-bottom:24px">
+          <div style="width:56px;height:56px;border-radius:50%;background:linear-gradient(135deg,#533483,#0f3460);display:flex;align-items:center;justify-content:center;font-size:1.6rem;flex-shrink:0">👾</div>
+          <div>
+            <div style="font-size:1.1rem;font-weight:700;color:var(--text)">${name}</div>
+            <div style="font-size:12px;color:var(--text-dim)">${role}</div>
+          </div>
+        </div>
+        <div class="about-stat-grid">
+          ${Object.entries(stats).map(([k,v]) => `<div class="about-stat-card"><div class="about-stat-num">${v}</div><div class="about-stat-label">${k}</div></div>`).join('')}
+        </div>
+        <div class="about-heading">Bio</div>
+        <div class="about-body">${bio}</div>
+        <div class="about-heading">Era</div>
+        <div class="about-body" style="font-size:1rem;font-weight:700;color:var(--text)">${era}</div>
+        <div class="about-heading">Stack</div>
+        <div>${skills.map(s => `<span class="about-tag">${s}</span>`).join('')}</div>
+        <div class="about-heading">Location</div>
+        <div class="about-body">${ABOUT.location}</div>
+      </div>
+    </div>`;
+  makeWindow({ id:'about', title:'About — Rohan Iyer', width:560, height:460, content });
+  updateDockRunning();
+}
+
+function openProject(proj) {
+  const statsHTML = Object.entries(proj.stats).map(([k,v]) => `<div class="proj-stat"><span class="proj-stat-num">${v}</span><span class="proj-stat-label">${k}</span></div>`).join('');
+  const tagsHTML  = proj.tags.map(t => `<span class="proj-tag">${t}</span>`).join('');
+  const btnsHTML  = Object.entries(proj.links).map(([k,v]) => `<button class="proj-btn proj-btn-ghost" onclick="window.open('${v}')">${k} ↗</button>`).join('');
+  const content = `
+    <div style="height:100%;overflow:auto">
+      <div class="proj-header" style="background:${proj.iconBg};background-size:cover">
+        <span class="proj-emoji-big">${proj.emoji}</span>
+        <div class="proj-title">${proj.label}</div>
+        <div class="proj-type">${proj.type}</div>
+      </div>
+      <div class="proj-body">
+        <div class="proj-stats-row">${statsHTML}</div>
+        <div class="proj-desc">${proj.desc}</div>
+        <div class="proj-tags">${tagsHTML}</div>
+        <div class="proj-btns">
+          ${btnsHTML}
+          <button class="proj-play-btn" onclick="playTrack('${proj.id}')">
+            ▶ Play the vibe — <span style="opacity:0.6">${proj.songTitle}</span>
+          </button>
+        </div>
+      </div>
+    </div>`;
+  makeWindow({ id: proj.id, title: proj.label, width: 480, height: 420, content });
+  updateDockRunning();
+}
+
+function openTerminal() {
+  const content = `
+    <div class="terminal-body" id="term-body">
+      <div style="color:#6272a4;margin-bottom:12px">Rohan OS v1.0.0 — Type <span style="color:#50fa7b">help</span> to get started.</div>
+      <div id="term-output"></div>
+      <div class="term-input-row">
+        <span class="term-prompt-cur">rohan@os ~ %</span>
+        <input id="term-input" type="text" autocomplete="off" spellcheck="false" placeholder="">
+      </div>
+    </div>`;
+  makeWindow({ id:'terminal', title:'Terminal', width:560, height:360, content });
+  updateDockRunning();
+  setTimeout(() => { const el = document.getElementById('term-input'); if(el) el.focus(); }, 100);
+}
+
+function openContact() {
+  const socialsHTML = Object.entries(CONTACT.socials).map(([k,v]) => `<a class="social-pill" href="${v}">${k}</a>`).join('');
+  const content = `
+    <div class="contact-body">
+      <div class="contact-field"><div class="contact-label">Email</div><div class="contact-val"><a href="mailto:${CONTACT.email}">${CONTACT.email}</a></div></div>
+      <div class="contact-field"><div class="contact-label">Location</div><div class="contact-val">${CONTACT.location}</div></div>
+      <div class="contact-field"><div class="contact-label">Social</div><div class="contact-val contact-socials">${socialsHTML}</div></div>
+      <div style="margin-top:28px;padding-top:20px;border-top:0.5px solid rgba(255,255,255,0.08)">
+        <div class="contact-label" style="margin-bottom:10px">Send a Message</div>
+        <input style="width:100%;background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.12);border-radius:8px;padding:10px 14px;color:var(--text);font-size:13px;outline:none;font-family:var(--font);margin-bottom:10px" placeholder="Your message..." type="text">
+        <button onclick="alert('Coming soon!')" style="background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:13px;font-weight:600;cursor:pointer">Send ↗</button>
+      </div>
+    </div>`;
+  makeWindow({ id:'contact', title:'Contact', width:400, height:400, content });
+  updateDockRunning();
+}
+
+// ═══════════════════════════════════════
+// TERMINAL LOGIC
+// ═══════════════════════════════════════
+function initTerminal() {
+  setTimeout(() => {
+    const input = document.getElementById('term-input');
+    if (!input) return;
+    input.addEventListener('keydown', e => {
+      if (e.key === 'Enter') {
+        const cmd = input.value.trim();
+        input.value = '';
+        runCmd(cmd);
+      }
+    });
+  }, 100);
+}
+
+function runCmd(cmd) {
+  const out = document.getElementById('term-output');
+  if (!out) return;
+
+  const line = document.createElement('div');
+  line.innerHTML = `<div class="term-line"><span class="term-prompt">rohan@os ~ %</span><span class="term-cmd">${escHtml(cmd)}</span></div>`;
+  out.appendChild(line);
+
+  const res = evalCmd(cmd.toLowerCase().trim());
+  const rline = document.createElement('div');
+  rline.className = res.err ? 'term-err' : 'term-out';
+  rline.textContent = res.text;
+  out.appendChild(rline);
+
+  const body = document.getElementById('term-body');
+  if (body) body.scrollTop = body.scrollHeight;
+}
+
+function evalCmd(cmd) {
+  const cmds = {
+    'help':     { text: `Available commands:\n  ls          — list everything\n  whoami      — who is Rohan?\n  cat bio     — read the bio\n  cat skills  — view the stack\n  open projects — open projects\n  open contact  — open contact\n  pwd         — current directory\n  clear       — clear terminal\n  uname       — system info\n  date        — current date` },
+    'ls':       { text: `about.txt    bio.txt    skills.txt    projects/    contact.txt\nresume.pdf   era.txt` },
+    'whoami':   { text: `Rohan Iyer — Builder. Engineer. Side-project addict.\nBased in Los Angeles, CA.` },
+    'pwd':      { text: `/Users/rohan` },
+    'date':     { text: new Date().toString() },
+    'uname':    { text: `Rohan OS 1.0.0 — Built on vibes, caffeine, and good music.` },
+    'clear':    { text: '', clear: true },
+    'cat bio':  { text: ABOUT.bio },
+    'cat skills':{ text: `Stack:\n${ABOUT.skills.join('  ')}` },
+    'cat era':  { text: ABOUT.era },
+    'open projects': { text: 'Opening projects...', action: () => { PROJECTS.forEach((p,i) => setTimeout(() => openProject(p), i*120)); } },
+    'open contact':  { text: 'Opening contact...', action: () => openContact() },
+    'open about':    { text: 'Opening about...', action: () => openAbout() },
+    'ls projects':   { text: PROJECTS.map((p,i) => `${i+1}. ${p.label}  (${p.type})`).join('\n') },
+    'cat resume':    { text: 'Nice try. Download it from the About window. 😄' },
+    'sudo':          { text: 'Nice try. You are not in the sudoers file. This incident will be reported.' },
+    'rm -rf /':      { text: 'Lol no.' },
+    'vim':           { text: 'I see you are a person of culture. (To exit: just close the window 😅)' },
+    'git status':    { text: 'On branch main\nYour branch is ahead of \'origin/main\' by 47 commits.\nnothing to commit, only vibes to push' },
+    'git log':       { text: 'commit a4f2d1c — "ship it"\ncommit 9b3e8f2 — "fix the thing"\ncommit 7c1a9d4 — "it worked on my machine"\ncommit 3f8b2e1 — "final final FINAL version"' },
+    'npm install':   { text: 'added 1,847 packages in 3s 🎉' },
+    'python':        { text: 'Python 3.11.0 — Type exit() to quit (or just close the window)' },
+    'ssh rohan':     { text: 'Connection refused. Go through the front door — open contact.' },
+  };
+
+  if (cmd === 'clear') {
+    const out = document.getElementById('term-output');
+    if (out) out.innerHTML = '';
+    return { text: '' };
+  }
+
+  // partial match for open proj-N
+  const projMatch = cmd.match(/^open\s+proj(?:ect)?\s*(\d+)$/);
+  if (projMatch) {
+    const idx = parseInt(projMatch[1]) - 1;
+    if (PROJECTS[idx]) {
+      setTimeout(() => openProject(PROJECTS[idx]), 50);
+      return { text: `Opening ${PROJECTS[idx].label}...` };
+    }
+    return { text: `Project ${projMatch[1]} not found. Try 'ls projects' to see the list.`, err: true };
+  }
+
+  if (cmds[cmd]) {
+    const r = cmds[cmd];
+    if (r.action) setTimeout(r.action, 100);
+    return r;
+  }
+
+  return { text: `Command not found: ${cmd}\nTry 'help' for a list of commands.`, err: true };
+}
+
+function escHtml(s) { return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ═══════════════════════════════════════
+// AUDIO
+// ═══════════════════════════════════════
+const audio = document.getElementById('audio');
+function playTrack(id) {
+  const proj = PROJECTS.find(p => p.id === id);
+  if (!proj) return;
+  audio.src = proj.song;
+  audio.play().catch(() => {});
+}
+
+// ═══════════════════════════════════════
+// DOCK + ICONS
+// ═══════════════════════════════════════
+const DOCK_APPS = [
+  { id:'about',    label:'About Me',  emoji:'👾', bg:'linear-gradient(135deg,#533483,#0f3460)', action: openAbout },
+  { id:'terminal', label:'Terminal',  emoji:'⌨️', bg:'#1e1e1e',                                action: openTerminal },
+  { id:'contact',  label:'Contact',   emoji:'📬', bg:'linear-gradient(135deg,#0a84ff,#0060df)', action: openContact },
+];
+
+function buildDock() {
+  const dock = document.getElementById('dock');
+  // Project icons
+  PROJECTS.forEach(p => {
+    const el = document.createElement('div');
+    el.className = 'dock-icon';
+    el.id = 'dock-' + p.id;
+    el.style.background = p.iconBg;
+    el.innerHTML = `<span style="font-size:26px">${p.emoji}</span><div class="dock-dot"></div><div class="dock-tooltip">${p.label}</div>`;
+    el.addEventListener('click', () => {
+      if (openWindows[p.id] && openWindows[p.id].classList.contains('minimized')) {
+        openWindows[p.id].classList.remove('minimized');
+        bringToFront(openWindows[p.id]);
+      } else openProject(p);
+      updateDockRunning();
+    });
+    dock.appendChild(el);
+  });
+
+  // Divider
+  const div = document.createElement('div');
+  div.className = 'dock-divider';
+  dock.appendChild(div);
+
+  // Static apps
+  DOCK_APPS.forEach(app => {
+    const el = document.createElement('div');
+    el.className = 'dock-icon';
+    el.id = 'dock-' + app.id;
+    el.style.background = app.bg;
+    el.innerHTML = `<span style="font-size:26px">${app.emoji}</span><div class="dock-dot"></div><div class="dock-tooltip">${app.label}</div>`;
+    el.addEventListener('click', () => {
+      if (openWindows[app.id] && openWindows[app.id].classList.contains('minimized')) {
+        openWindows[app.id].classList.remove('minimized');
+        bringToFront(openWindows[app.id]);
+      } else app.action();
+      updateDockRunning();
+    });
+    dock.appendChild(el);
+  });
+}
+
+function buildIconGrid() {
+  const grid = document.getElementById('icon-grid');
+  const all = [
+    ...PROJECTS.map(p => ({ ...p, action: () => openProject(p) })),
+    { id:'about',    label:'About Me',  emoji:'👾', iconBg:'linear-gradient(135deg,#533483,#0f3460)', action: openAbout },
+    { id:'terminal', label:'Terminal',  emoji:'⌨️', iconBg:'#1e1e1e',                                action: openTerminal },
+    { id:'contact',  label:'Contact',   emoji:'📬', iconBg:'linear-gradient(135deg,#0a84ff,#0060df)', action: openContact },
+  ];
+  all.forEach(app => {
+    const el = document.createElement('div');
+    el.className = 'desktop-icon';
+    el.innerHTML = `<div class="icon-img" style="background:${app.iconBg}">${app.emoji}</div><span class="icon-label">${app.label}</span>`;
+    el.addEventListener('dblclick', () => { app.action(); updateDockRunning(); });
+    el.addEventListener('click', e => {
+      document.querySelectorAll('.desktop-icon').forEach(d => d.classList.remove('selected'));
+      el.classList.add('selected');
+      e.stopPropagation();
+    });
+    grid.appendChild(el);
+  });
+  document.getElementById('desktop').addEventListener('click', () => {
+    document.querySelectorAll('.desktop-icon').forEach(d => d.classList.remove('selected'));
+  });
+}
+
+function updateDockRunning() {
+  document.querySelectorAll('.dock-icon').forEach(el => {
+    const id = el.id.replace('dock-', '');
+    const running = openWindows[id] && !openWindows[id].classList.contains('minimized');
+    el.classList.toggle('running', !!openWindows[id]);
+  });
+}
+
+// ═══════════════════════════════════════
+// CLOCK
+// ═══════════════════════════════════════
+function updateClock() {
+  const now = new Date();
+  const d = now.toLocaleDateString('en-US',{weekday:'short',month:'short',day:'numeric'});
+  const t = now.toLocaleTimeString('en-US',{hour:'numeric',minute:'2-digit'});
+  document.getElementById('menubar-clock').textContent = `${d}  ${t}`;
+}
+updateClock(); setInterval(updateClock, 10000);
+
+// ═══════════════════════════════════════
+// MENUBAR DROPDOWNS
+// ═══════════════════════════════════════
+function toggleMenu(id) {
+  const dd = document.getElementById('dd-' + id);
+  const mb = document.getElementById('mb-' + id);
+  const isOpen = dd.classList.contains('open');
+  closeAllMenus();
+  if (!isOpen) {
+    dd.classList.add('open');
+    mb.classList.add('open');
+  }
+}
+
+function closeAllMenus() {
+  document.querySelectorAll('.menu-dropdown').forEach(d => d.classList.remove('open'));
+  document.querySelectorAll('.menubar-item').forEach(d => d.classList.remove('open'));
+}
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.menubar-item')) closeAllMenus();
+});
+
+// ═══════════════════════════════════════
+// WINDOW MANAGEMENT HELPERS
+// ═══════════════════════════════════════
+function closeAllWindows() {
+  closeAllMenus();
+  Object.keys(openWindows).forEach(id => closeWindow(id));
+}
+
+function minimizeAllWindows() {
+  closeAllMenus();
+  Object.keys(openWindows).forEach(id => {
+    const w = openWindows[id];
+    if (w) w.classList.add('minimized');
+  });
+  updateDockRunning();
+}
+
+function tileWindows() {
+  closeAllMenus();
+  const wins = Object.values(openWindows).filter(w => !w.classList.contains('minimized'));
+  if (!wins.length) return;
+  const cols = Math.ceil(Math.sqrt(wins.length));
+  const rows = Math.ceil(wins.length / cols);
+  const vw = window.innerWidth, vh = window.innerHeight - var_menubar_h() - 90;
+  const w = Math.floor(vw / cols) - 12;
+  const h = Math.floor(vh / rows) - 12;
+  wins.forEach((win, i) => {
+    const col = i % cols, row = Math.floor(i / cols);
+    win.style.left   = (col * (w + 12)) + 'px';
+    win.style.top    = (var_menubar_h() + 10 + row * (h + 12)) + 'px';
+    win.style.width  = w + 'px';
+    win.style.height = h + 'px';
+    win.dataset.maximized = '0';
+  });
+}
+
+function cascadeWindows() {
+  closeAllMenus();
+  const wins = Object.values(openWindows).filter(w => !w.classList.contains('minimized'));
+  wins.forEach((win, i) => {
+    win.style.left   = (60 + i * 30) + 'px';
+    win.style.top    = (var_menubar_h() + 40 + i * 30) + 'px';
+    win.style.width  = '480px';
+    win.style.height = '420px';
+    win.dataset.maximized = '0';
+    bringToFront(win);
+  });
+}
+
+// keyboard shortcuts
+document.addEventListener('keydown', e => {
+  if (e.metaKey || e.ctrlKey) {
+    if (e.key === '1') { e.preventDefault(); openAbout(); }
+    if (e.key === '2') { e.preventDefault(); openTerminal(); }
+    if (e.key === '3') { e.preventDefault(); openContact(); }
+    if (e.key === 'w' && e.altKey) { e.preventDefault(); closeAllWindows(); }
+    if (e.key === 'm') { e.preventDefault(); minimizeAllWindows(); }
+  }
+  if (e.key === 'Escape') closeAllMenus();
+});
+
+
+buildDock();
+buildIconGrid();
+
+// Open About on load after a short delay
+setTimeout(() => { openAbout(); }, 600);
+setTimeout(() => { openTerminal(); }, 1000);
+</script>
+</body>
+</html>
